@@ -22,5 +22,6 @@ yarn-error.log
 /.vscode
 /.zed
 docker-compose.yml
-docker
+docker/nginx.conf
+composer.lock
 package-lock.json
