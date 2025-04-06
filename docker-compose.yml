@@ -14,7 +14,7 @@ services:
         ports:
             - "8080:8080"
     #        command: >
-    #            sh -c "php artisan reverb:start && php artisan queue:listen"
+    #                sh -c "php artisan reverb:start && php artisan queue:listen"
 
     postgres:
         image: postgres
@@ -76,7 +76,7 @@ services:
         image: redis:latest
         container_name: websocket_redis
         ports:
-            - "6379:6379"
+            - "6378:6379"
         volumes:
             - redis-data:/data
         networks:
