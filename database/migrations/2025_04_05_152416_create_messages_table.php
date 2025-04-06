@@ -15,7 +15,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreignId('user_id')->constrained();
-            $table->foreignId('room_id')->constrained();
+//            $table->foreignId('room_id')->constrained();
             $table->text('text')->nullable();
         });
     }
