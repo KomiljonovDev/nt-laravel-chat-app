@@ -86,4 +86,4 @@ USER root
 
 # Set recommended directory permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-RUN php artisan reverb:start && php artisan queue:listen
+#RUN php artisan reverb:start && php artisan queue:listen

@@ -23,14 +23,14 @@
 
             <!-- Chat Window Component - adapt width based on profile panel -->
             <div :class="[
-        'flex flex-col',
-        showProfilePanel
-          ? 'w-1/2 md:w-3/5 lg:w-2/3'
-          : 'w-3/4 md:w-4/5 lg:w-5/6'
-      ]">
+                'flex flex-col',
+                showProfilePanel
+                    ? 'w-1/2 md:w-3/5 lg:w-2/3'
+                    : 'w-3/4 md:w-4/5 lg:w-5/6'
+            ]">
                 <ChatWindow
                     v-if="selectedContactId"
-                    :messages="messages"
+                    :messages="messages[selectedContactId]"
                     :currentUser="currentUser"
                     :selectedContact="getSelectedContact()"
                     @toggle-profile="toggleProfilePanel"
@@ -97,8 +97,8 @@ export default {
             avatar: '/images/default-avatar.png'
         });
 
-        // Messages data
-        const messages = ref([]);
+        // Messages data (Now stored per contact)
+        const messages = ref({}); // {contactId: [messages]}
         const newMessage = ref('');
 
         // Sample contacts data (would be fetched from API in a real app)
@@ -240,12 +240,13 @@ export default {
                 console.error('Error fetching user:', err.message);
             }
         };
-        // Integrate with your existing message functions
+
+        // Fetch messages for selected contact
         const getMessages = async () => {
             try {
-                // In a real app, you'd include the selected contact ID in the request
-                const response = await axios.get(`/messages/`);
-                messages.value = response.data;
+                // Fetch messages based on selected contact ID
+                const response = await axios.get(`/messages/${selectedContactId.value}`);
+                messages.value[selectedContactId.value] = response.data;
                 // Scroll to bottom after messages are loaded
                 scrollToBottom();
             } catch (err) {
@@ -253,16 +254,18 @@ export default {
             }
         };
 
+        // Send a new message
         const sendMessage = async () => {
             if (newMessage.value.trim() === '') return;
 
             try {
-                // In a real app, you'd send the message to the server
+                // Send message to the server
                 await axios.post('/message', {
-                  text: newMessage.value.trim()
+                    contact_id: selectedContactId.value,
+                    text: newMessage.value.trim()
                 });
 
-                // For demo purposes, we'll add the message locally
+                // Add message locally
                 const message = {
                     id: Date.now(),
                     user: { id: currentUser.value.id, name: currentUser.value.name },
@@ -270,148 +273,59 @@ export default {
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 };
 
-                messages.value.push(message);
+                // Ensure messages for selected contact exist
+                if (!messages.value[selectedContactId.value]) {
+                    messages.value[selectedContactId.value] = [];
+                }
 
-                // Update the last message in contacts
+                // Add the new message to the list
+                messages.value[selectedContactId.value].push(message);
+
+                // Update the contact's last message
                 const contact = contacts.value.find(c => c.id === selectedContactId.value);
                 if (contact) {
                     contact.lastMessage = newMessage.value.trim();
                     contact.timestamp = message.time;
                 }
 
-                // Clear input
+                // Clear the input field
                 newMessage.value = '';
-
-                // Scroll to bottom
                 scrollToBottom();
             } catch (err) {
                 console.error('Error sending message:', err.message);
             }
         };
 
+        // Scroll to the bottom of the chat window
         const scrollToBottom = () => {
             nextTick(() => {
-                const messageList = document.getElementById('messagelist');
-                if (messageList) {
-                    messageList.scrollTop = messageList.scrollHeight;
+                const chatWindow = document.getElementById('messagelist');
+                if (chatWindow) {
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
                 }
             });
         };
 
-        const toggleNotifications = () => {
-            showNotifications.value = !showNotifications.value;
-        };
-
-        const markNotificationAsRead = (id) => {
-            const notification = notifications.value.find(n => n.id === id);
-            if (notification) notification.read = true;
-
-            // In a real app, you'd send an API request to update the server
-        };
-
-        const markAllNotificationsAsRead = () => {
-            notifications.value.forEach(notification => {
-                notification.read = true;
-            });
-
-            // In a real app, you'd send an API request to update the server
-        };
-
-        // Lifecycle hooks
-        onMounted(() => {
-            // Initialize messages for the default selected contact
-            getMe();
-            getMessages();
-
-            // Set up Echo for real-time updates
-            if (window.Echo) {
-                window.Echo.private("channel_for_everyone")
-                    .listen('GotMessage', (e) => {
-                        console.log('Received message:', e);
-                        // Reload messages to include the new one
-                        getMessages();
-
-                        // If the message is from the currently selected contact,
-                        // mark it as read. Otherwise, update unread state.
-                        if (e.message && e.message.user_id !== selectedContactId.value) {
-                            const contact = contacts.value.find(c => c.id === e.message.user_id);
-                            if (contact) contact.unread = true;
-                        }
-                    });
-            }
-        });
+        onMounted(getMe);
 
         return {
             currentUser,
-            contacts,
-            filteredContacts,
-            selectedContactId,
             messages,
             newMessage,
+            contacts,
+            searchQuery,
+            filteredContacts,
+            selectedContactId,
             notifications,
             showNotifications,
             showProfilePanel,
+            getMessages,
+            sendMessage,
             selectContact,
             getSelectedContact,
-            sendMessage,
-            searchGlobal,
-            toggleNotifications,
             toggleProfilePanel,
-            markNotificationAsRead,
-            markAllNotificationsAsRead
+            searchGlobal
         };
     }
 };
 </script>
-
-<style>
-/* Base styles */
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    color: #333;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-}
-
-/* Animations */
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
-
-.slide-right-enter-active,
-.slide-right-leave-active {
-    transition: transform 0.3s ease;
-}
-
-.slide-right-enter-from,
-.slide-right-leave-to {
-    transform: translateX(-20px);
-    opacity: 0;
-}
-</style>
