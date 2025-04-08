@@ -251,6 +251,13 @@ export default {
             }
         };
 
+        const makeSound = () => {
+            const audio = new Audio('/sounds/tik.wav');
+            audio.play().catch((e) => {
+                console.warn('Autoplay prevented:', e.message);
+            });
+        }
+
         const scrollToBottom = () => {
             nextTick(() => {
                 const messageList = document.getElementById('messagelist');
@@ -293,6 +300,7 @@ export default {
                         console.log('Received message:', e);
                         // Reload messages to include the new one
                         getMessages();
+                        makeSound();
 
                         // If the message is from the currently selected contact,
                         // mark it as read. Otherwise, update unread state.
