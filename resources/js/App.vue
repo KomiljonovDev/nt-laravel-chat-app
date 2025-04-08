@@ -267,7 +267,7 @@ export default {
             try {
                 // In a real app, you'd send the message to the server
                 await axios.post('/message', {
-                  text: newMessage.value.trim()
+                    text: newMessage.value.trim()
                 });
 
                 // For demo purposes, we'll add the message locally
