@@ -7,20 +7,28 @@ use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
-    public function index(){
-        return [
-                [
-                'id'=> 1,
-                'name'=> 'Arya Wibawa',
-                'lastMessage'=> 'Yes, sure! I will fill it out now.',
-                'timestamp'=> '10:20',
-                'avatar'=> '/images/default-avatar.png',
-                'unread'=> false,
-                'email'=> 'arya.wibawa@example.com',
-                'phone'=> '+62 812-3456-7890',
-                'location'=> 'Jakarta, Indonesia',
-                'lastSeen'=> 'today'
-            ]
-        ];
+    public function index()
+    {
+        $roomUser = Room::with('users')->get();
+
+        $rooms = [];
+        foreach ($roomUser as $room) {
+            foreach ($room->users as $user) {
+                $rooms[] = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'lastMessage' => 'Last Message RoomController',
+                    'timestamp' => $user->updated_at->format('H:i'),
+                    'avatar' => '/images/default-avatar.png',
+                    'unread' => false,
+                    'email' => $user->email,
+                    'phone' => $user->phone_number,
+                    'location' => $user->location,
+                    'lastSeen' => $user->updated_at->format('H:i'),
+                ];
+            }
+        }
+
+        return $rooms;
     }
 }

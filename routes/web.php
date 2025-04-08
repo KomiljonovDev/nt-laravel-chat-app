@@ -31,8 +31,3 @@ Route::middleware(['auth', UserLastOnlineTime::class])->group(function () {
     Route::post('/message', [HomeController::class, 'message'])
         ->name('message');
 });
-
-
-
-
-
