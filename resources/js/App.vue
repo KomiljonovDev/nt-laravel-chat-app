@@ -221,7 +221,7 @@ export default {
             try {
                 // In a real app, you'd send the message to the server
                 await axios.post('/message', {
-                  text: newMessage.value.trim()
+                    text: newMessage.value.trim()
                 });
 
                 // For demo purposes, we'll add the message locally
@@ -250,6 +250,13 @@ export default {
                 console.error('Error sending message:', err.message);
             }
         };
+
+        const makeSound = () => {
+            const audio = new Audio('/sounds/tik.wav');
+            audio.play().catch((e) => {
+                console.warn('Autoplay prevented:', e.message);
+            });
+        }
 
         const scrollToBottom = () => {
             nextTick(() => {
@@ -293,6 +300,7 @@ export default {
                         console.log('Received message:', e);
                         // Reload messages to include the new one
                         getMessages();
+                        makeSound();
 
                         // If the message is from the currently selected contact,
                         // mark it as read. Otherwise, update unread state.
