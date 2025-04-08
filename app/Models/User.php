@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone_number',
+        'location',
     ];
 
     /**
@@ -44,5 +46,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function lastMessage () {
+        return $this->hasMany(Message::class, 'user_id')
+            ->orderBy('id', 'desc')
+                ->limit(1);
     }
 }
