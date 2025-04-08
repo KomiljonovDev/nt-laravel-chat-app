@@ -233,17 +233,23 @@ export default {
 
         const getMe = async () => {
             try {
-                const response = await axios.get(`/me/`);
+                const token = localStorage.getItem('token'); // tokenni localStorage yoki cookie-dan olasiz
+                const response = await axios.get('/api/me/', {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
                 currentUser.value = response.data;
             } catch (err) {
                 console.error('Error fetching user:', err.message);
             }
         };
+
         // Integrate with your existing message functions
         const getMessages = async () => {
             try {
                 // In a real app, you'd include the selected contact ID in the request
-                const response = await axios.get(`/messages/`);
+                const response = await axios.get(`/api/messages/`);
                 messages.value = response.data;
                 // Scroll to bottom after messages are loaded
                 scrollToBottom();
@@ -254,7 +260,7 @@ export default {
 
         const getRooms = async () => {
             try{
-                const response = await axios.get('/rooms');
+                const response = await axios.get('/api/rooms');
                 contacts.value = response.data;
             }catch (err){
                 console.error(err);
@@ -266,7 +272,7 @@ export default {
 
             try {
                 // In a real app, you'd send the message to the server
-                await axios.post('/message', {
+                await axios.post('/api/message', {
                   text: newMessage.value.trim()
                 });
 
