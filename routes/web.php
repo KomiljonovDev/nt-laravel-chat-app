@@ -9,8 +9,8 @@ use App\Http\Middleware\UserLastOnlineTime;
 
 Auth::routes();
 
-Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
 Route::middleware(['auth', UserLastOnlineTime::class])->group(function () {
+    Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
 
     Route::get('/', function () {
         return view('welcome');

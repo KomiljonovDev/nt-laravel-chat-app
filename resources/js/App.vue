@@ -115,54 +115,6 @@ export default {
                 location: 'Jakarta, Indonesia',
                 lastSeen: 'today'
             },
-            {
-                id: 2,
-                name: 'Vita Darmawan',
-                lastMessage: 'Yes, sure! I will fill it out now.',
-                timestamp: '10:18',
-                avatar: '/images/default-avatar.png',
-                unread: true,
-                email: 'vita.darmawan@example.com',
-                phone: '+62 813-4567-8901',
-                location: 'Surabaya, Indonesia',
-                lastSeen: 'yesterday'
-            },
-            {
-                id: 3,
-                name: 'Purnami Aksa',
-                lastMessage: 'Yes, sure! I will fill it out now.',
-                timestamp: '10:17',
-                avatar: '/images/default-avatar.png',
-                unread: false,
-                email: 'purnami.aksa@example.com',
-                phone: '+62 814-5678-9012',
-                location: 'Bali, Indonesia',
-                lastSeen: '2 days ago'
-            },
-            {
-                id: 4,
-                name: 'Angel Mawar',
-                lastMessage: 'Yes, sure! I will fill it out now.',
-                timestamp: '10:15',
-                avatar: '/images/default-avatar.png',
-                unread: true,
-                email: 'angel.mawar@example.com',
-                phone: '+62 815-6789-0123',
-                location: 'Bandung, Indonesia',
-                lastSeen: 'today'
-            },
-            {
-                id: 5,
-                name: 'Lily Indrawan',
-                lastMessage: 'Yes, sure! I will fill it out now.',
-                timestamp: '10:12',
-                avatar: '/images/default-avatar.png',
-                unread: false,
-                email: 'lily.indrawan@example.com',
-                phone: '+62 816-7890-1234',
-                location: 'Yogyakarta, Indonesia',
-                lastSeen: '3 days ago'
-            }
         ]);
 
         // Search query for filtering contacts
@@ -198,7 +150,7 @@ export default {
         ]);
 
         // Track selected contact
-        const selectedContactId = ref(1); // Default to first contact
+        const selectedContactId = ref(); // Default to first contact
 
         // Show/hide notifications modal
         const showNotifications = ref(false);
@@ -255,6 +207,8 @@ export default {
         const getRooms = async () => {
             try{
                 const response = await axios.get('/rooms');
+                console.info(response.data);
+                console.info(contacts);
                 contacts.value = response.data;
             }catch (err){
                 console.error(err);
