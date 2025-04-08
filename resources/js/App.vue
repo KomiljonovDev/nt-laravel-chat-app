@@ -197,6 +197,8 @@ export default {
             }
         ]);
 
+        const currentUserId = window.currentUserId;
+
         // Track selected contact
         const selectedContactId = ref(1); // Default to first contact
 
@@ -351,6 +353,7 @@ export default {
         });
 
         return {
+            currentUserId,
             currentUser,
             contacts,
             filteredContacts,

@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
-
             $table->foreignId('user_id')->constrained();
 //            $table->foreignId('room_id')->constrained();
+            $table->boolean('is_read')->default(false);
             $table->text('text')->nullable();
+            $table->timestamps();
         });
     }
 

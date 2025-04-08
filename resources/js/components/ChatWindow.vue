@@ -69,6 +69,7 @@
                         :message="message"
                         :isSender="message.user.id === currentUser.id"
                         :showAvatar="shouldShowAvatar(message)"
+                        :currentUserId="currentUserId"
                         class="max-w-3xl md:max-w-4xl lg:max-w-5xl"
                     />
                 </transition-group>

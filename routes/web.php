@@ -5,9 +5,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Middleware\UserLastOnlineTime;
-
+use App\Http\Controllers\MessageController;
 
 Auth::routes();
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/messages/{id}/read', [MessageController::class, 'markAsRead']);
+    Route::post('/messages/{id}/delivered', [MessageController::class, 'markAsDelivered']);
+});
 
 Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
 Route::middleware(['auth', UserLastOnlineTime::class])->group(function () {

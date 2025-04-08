@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('room_user', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('room_id')->constrained();
-            $table->foreignId('user_id')->constrained();
-            $table->unique(['room_id', 'user_id']);
-            $table->timestamps();
+        Schema::table('messages', function (Blueprint $table) {
+            $table->boolean('delivered')->default(false);
+            $table->boolean('read')->default(false);
         });
     }
 
@@ -25,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('room_user');
+        Schema::table('messages', function (Blueprint $table) {
+            //
+        });
     }
 };

@@ -76,5 +76,9 @@
             @yield('content')
         </main>
     </div>
+
+    <script>
+        window.currentUserId = {{ auth()->id() }};
+    </script>
 </body>
 </html>

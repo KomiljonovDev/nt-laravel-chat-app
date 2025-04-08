@@ -42,30 +42,27 @@
                 </div>
 
                 <!-- Message Metadata -->
+                <!-- Message Metadata (yangilangan) -->
                 <div class="flex items-center justify-end mt-1 space-x-1">
-                    <!-- Timestamp -->
                     <span class="text-xs text-gray-500">{{ message.time || message.formattedTime }}</span>
 
-                    <!-- Read status (only for sent messages) -->
+                    <!-- Telegram-style check marks -->
                     <span v-if="isSender">
-            <svg
-                v-if="message.read"
-                class="inline-block w-4 h-4 text-blue-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-            >
-              <path d="M2.5 8.5l3.5 3.5 8.5-8.5 1.5 1.5-10 10-5-5 1.5-1.5z"></path>
-            </svg>
-            <svg
-                v-else
-                class="inline-block w-4 h-4 text-gray-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-            >
-              <path d="M2.5 8.5l3.5 3.5 8.5-8.5 1.5 1.5-10 10-5-5 1.5-1.5z"></path>
-            </svg>
-          </span>
+                    <!-- O'qilgan (✓✓ ko'k) -->
+                    <svg v-if="message.read" class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 10l4 4 10-10 1.5 1.5-11.5 11.5-5.5-5.5 1.5-1.5z" />
+                    </svg>
+                        <!-- Yetkazilgan (✓✓ kulrang) -->
+                    <svg v-else-if="message.delivered" class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 10l4 4 10-10 1.5 1.5-11.5 11.5-5.5-5.5 1.5-1.5z" />
+                    </svg>
+                        <!-- Faqat yuborilgan (✓ bitta) -->
+                    <svg v-else class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.5 10.5l4.5 4.5L17.5 4.5 16 3l-9 9-3-3-1.5 1.5z" />
+                    </svg>
+                    </span>
                 </div>
+
             </div>
 
             <!-- Message Options (visible on hover) -->
@@ -100,17 +97,48 @@ export default {
         showAvatar: {
             type: Boolean,
             default: true
+        },
+        currentUserId: {
+            type: Number, // Foydalanuvchi ID si
+            required: true
         }
     },
-    setup() {
-        const handleImageError = (e) => {
-            // Use a default avatar if image fails to load
-            e.target.src = '/images/default-avatar.png';
-        };
+    mounted() {
+        this.markAsDelivered();
+        this.markAsReadIfNeeded();
+    },
+    methods: {
+        async markAsDelivered() {
+            if (!this.isSender && !this.message.delivered && this.message.receiver_id === this.currentUserId) {
+                await fetch(`/messages/${this.message.id}/delivered`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
 
-        return {
-            handleImageError
-        };
+                this.message.delivered = true;
+            }
+        },
+        async markAsReadIfNeeded() {
+            if (!this.isSender && !this.message.read && this.message.receiver_id === this.currentUserId) {
+                await fetch(`/messages/${this.message.id}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
+
+                this.message.read = true;
+            }
+        }
+    },
+    handleImageError(e) {
+            e.target.src = '/images/default-avatar.png';
     }
 };
 </script>
