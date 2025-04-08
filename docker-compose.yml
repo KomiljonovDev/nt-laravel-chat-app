@@ -90,7 +90,7 @@ services:
         image: redis:alpine
         container_name: websocket_redis
         ports:
-            - "6379:6379"
+            - "1234:4321"
         volumes:
             - redis-data:/data
         networks:
