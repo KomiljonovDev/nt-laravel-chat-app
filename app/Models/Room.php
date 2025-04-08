@@ -11,9 +11,9 @@ class Room extends Model
     public function users(){
         return $this->belongsToMany(User::class);
     }
-    public function user(){
-        return $this->belongsToMany(User::class)
-            ->where('user_id', '!=', auth()->id())
-                ->with('lastMessage');
+    public function lastMessage(){
+        return $this->hasOne(Message::class)
+            ->orderBy('id', 'desc')
+                ->limit(1);
     }
 }
