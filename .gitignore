@@ -21,7 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-docker-compose.yml
 docker/nginx.conf
 composer.lock
 package-lock.json
+docker-compose.yml
+.gitignore
