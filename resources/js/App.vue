@@ -23,11 +23,11 @@
 
             <!-- Chat Window Component - adapt width based on profile panel -->
             <div :class="[
-                'flex flex-col',
-                showProfilePanel
-                    ? 'w-1/2 md:w-3/5 lg:w-2/3'
-                    : 'w-3/4 md:w-4/5 lg:w-5/6'
-            ]">
+        'flex flex-col',
+        showProfilePanel
+          ? 'w-1/2 md:w-3/5 lg:w-2/3'
+          : 'w-3/4 md:w-4/5 lg:w-5/6'
+      ]">
                 <ChatWindow
                     v-if="selectedContactId"
                     :messages="messages"
@@ -79,21 +79,6 @@ import MessageInput from './components/MessageInput.vue';
 import NotificationModal from './components/NotificationModal.vue';
 import ProfilePanel from './components/ProfilePanel.vue';
 
-
-axios.defaults.baseURL = 'http://localhost:9000';
-axios.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
 export default {
     components: {
         Header,
@@ -104,15 +89,33 @@ export default {
         ProfilePanel
     },
     setup() {
-        // Current user
-        const currentUser = ref(null);
+        // Current user (would be fetched from API in a real app)
+        const currentUser = ref({
+            id: 2,
+            name: 'Dea Novita',
+            role: 'Admin',
+            avatar: '/images/default-avatar.png'
+        });
 
         // Messages data
         const messages = ref([]);
         const newMessage = ref('');
 
-        // Contacts data
-        const contacts = ref([]);
+        // Sample contacts data (would be fetched from API in a real app)
+        const contacts = ref([
+            {
+                id: 1,
+                name: 'Arya Wibawa',
+                lastMessage: 'Yes, sure! I will fill it out now.',
+                timestamp: '10:20',
+                avatar: '/images/default-avatar.png',
+                unread: false,
+                email: 'arya.wibawa@example.com',
+                phone: '+62 812-3456-7890',
+                location: 'Jakarta, Indonesia',
+                lastSeen: 'today'
+            },
+        ]);
 
         // Search query for filtering contacts
         const searchQuery = ref('');
@@ -147,30 +150,13 @@ export default {
         ]);
 
         // Track selected contact
-        const selectedContactId = ref(null);
+        const selectedContactId = ref(); // Default to first contact
 
         // Show/hide notifications modal
         const showNotifications = ref(false);
 
         // Show/hide profile panel
         const showProfilePanel = ref(false);
-
-        // Login metodi (vaqtincha App.vue’da)
-        const login = async (email, password) => {
-            try {
-                const response = await axios.post('/api/login', {
-                    email,
-                    password
-                });
-                const { token, user } = response.data;
-                localStorage.setItem('auth_token', token); // Tokenni saqlash
-                currentUser.value = user; // Foydalanuvchi ma'lumotlarini o‘rnatish
-                return true;
-            } catch (err) {
-                console.error('Login error:', err.message);
-                return false;
-            }
-        };
 
         // Methods
         const selectContact = (contactId) => {
@@ -190,6 +176,7 @@ export default {
 
         const searchGlobal = (query) => {
             searchQuery.value = query;
+            // In a real app, you might want to perform a more comprehensive search
         };
 
         const toggleProfilePanel = () => {
@@ -198,23 +185,19 @@ export default {
 
         const getMe = async () => {
             try {
-                const token = localStorage.getItem('auth_token');
-                const response = await axios.get('/api/me', {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
+                const response = await axios.get(`/me/`);
                 currentUser.value = response.data;
             } catch (err) {
                 console.error('Error fetching user:', err.message);
             }
         };
-
-
+        // Integrate with your existing message functions
         const getMessages = async () => {
             try {
-                const response = await axios.get('/api/messages');
+                // In a real app, you'd include the selected contact ID in the request
+                const response = await axios.get(`/messages/`);
                 messages.value = response.data;
+                // Scroll to bottom after messages are loaded
                 scrollToBottom();
             } catch (err) {
                 console.error('Error fetching messages:', err.message);
@@ -222,11 +205,13 @@ export default {
         };
 
         const getRooms = async () => {
-            try {
-                const response = await axios.get('/api/rooms');
+            try{
+                const response = await axios.get('/rooms');
+                console.info(response.data);
+                console.info(contacts);
                 contacts.value = response.data;
-            } catch (err) {
-                console.error('Error fetching rooms:', err.message);
+            }catch (err){
+                console.error(err);
             }
         };
 
@@ -234,10 +219,12 @@ export default {
             if (newMessage.value.trim() === '') return;
 
             try {
-                await axios.post('/api/message', {
+                // In a real app, you'd send the message to the server
+                await axios.post('/message', {
                     text: newMessage.value.trim()
                 });
 
+                // For demo purposes, we'll add the message locally
                 const message = {
                     id: Date.now(),
                     user: { id: currentUser.value.id, name: currentUser.value.name },
@@ -247,13 +234,17 @@ export default {
 
                 messages.value.push(message);
 
+                // Update the last message in contacts
                 const contact = contacts.value.find(c => c.id === selectedContactId.value);
                 if (contact) {
                     contact.lastMessage = newMessage.value.trim();
                     contact.timestamp = message.time;
                 }
 
+                // Clear input
                 newMessage.value = '';
+
+                // Scroll to bottom
                 scrollToBottom();
             } catch (err) {
                 console.error('Error sending message:', err.message);
@@ -283,15 +274,21 @@ export default {
         const markNotificationAsRead = (id) => {
             const notification = notifications.value.find(n => n.id === id);
             if (notification) notification.read = true;
+
+            // In a real app, you'd send an API request to update the server
         };
 
         const markAllNotificationsAsRead = () => {
             notifications.value.forEach(notification => {
                 notification.read = true;
             });
+
+            // In a real app, you'd send an API request to update the server
         };
 
+        // Lifecycle hooks
         onMounted(() => {
+            // Initialize messages for the default selected contact
             getMe();
             getRooms();
             getMessages();
@@ -301,9 +298,12 @@ export default {
                 window.Echo.private("channel_for_everyone")
                     .listen('GotMessage', (e) => {
                         console.log('Received message:', e);
+                        // Reload messages to include the new one
                         getMessages();
                         makeSound();
 
+                        // If the message is from the currently selected contact,
+                        // mark it as read. Otherwise, update unread state.
                         if (e.message && e.message.user_id !== selectedContactId.value) {
                             const contact = contacts.value.find(c => c.id === e.message.user_id);
                             if (contact) contact.unread = true;
@@ -311,7 +311,6 @@ export default {
                     });
             }
         });
-
 
         return {
             currentUser,
