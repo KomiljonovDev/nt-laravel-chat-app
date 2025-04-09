@@ -15,7 +15,7 @@
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar Component - smaller on larger screens -->
             <Sidebar
-                :contacts="filteredContacts"
+                :contacts="contactsStore.filteredContacts"
                 :selectedContactId="selectedContactId"
                 @select-contact="selectContact"
                 class="w-1/4 md:w-1/5 lg:w-1/6 border-r bg-white overflow-y-auto"
@@ -103,23 +103,6 @@ export default {
         const messages = ref([]);
         const newMessage = ref('');
 
-        // Sample contacts data (would be fetched from API in a real app)
-        const contacts = ref(contactsStore.contacts);
-
-        // Search query for filtering contacts
-        const searchQuery = ref('');
-
-        // Filtered contacts based on search query
-        const filteredContacts = computed(() => {
-            if (!searchQuery.value) return contacts.value;
-
-            const query = searchQuery.value.toLowerCase();
-            return contacts.value.filter(contact =>
-                contact.name.toLowerCase().includes(query) ||
-                contact.lastMessage.toLowerCase().includes(query)
-            );
-        });
-
         // Notifications
         const notifications = ref([
             {
@@ -152,7 +135,7 @@ export default {
             selectedContactId.value = contactId;
 
             // Mark as read (in real app, send API request)
-            const contact = contacts.value.find(c => c.id === contactId);
+            const contact = contactsStore.contacts.find(c => c.id === contactId);
             if (contact) contact.unread = false;
 
             // Get messages for selected contact
@@ -160,22 +143,12 @@ export default {
         };
 
         const getSelectedContact = () => {
-            return contacts.value.find(c => c.id === selectedContactId.value) || null;
+            return contactsStore.contacts.find(c => c.id === selectedContactId.value) || null;
         };
 
-        const searchGlobal = async (query) => {
-            try {
-                if (query.length <= 2){
-                    contacts.value = contactsStore.contacts;
-                    return;
-                }
-                const response = await axios.get('search?q=' + query);
-                contacts.value = response.data;
-            } catch (e) {
-                console.error(e.message);
-            }
-            searchQuery.value = query;
-            // In a real app, you might want to perform a more comprehensive search
+        const searchGlobal = (query) => {
+            // Use the store's fetchContacts action instead
+            contactsStore.fetchContacts(query);
         };
 
         const toggleProfilePanel = () => {
@@ -202,11 +175,9 @@ export default {
                 console.error('Error fetching messages:', err.message);
             }
         };
-
         const getRooms = async () => {
             try{
                 const response = await axios.get('/rooms');
-                contacts.value = response.data;
                 contactsStore.getContacts(response.data);
             }catch (err){
                 console.error(err);
@@ -233,12 +204,12 @@ export default {
                 messages.value.push(message);
 
                 // Update the last message in contacts
-                const contact = contacts.value.find(c => c.id === selectedContactId.value);
+                // Update the last message in contacts
+                const contact = contactsStore.contacts.find(c => c.id === selectedContactId.value);
                 if (contact) {
                     contact.lastMessage = newMessage.value.trim();
                     contact.timestamp = message.time;
                 }
-
                 // Clear input
                 newMessage.value = '';
 
@@ -303,17 +274,16 @@ export default {
                         // If the message is from the currently selected contact,
                         // mark it as read. Otherwise, update unread state.
                         if (e.message && e.message.user_id !== selectedContactId.value) {
-                            const contact = contacts.value.find(c => c.id === e.message.user_id);
+                        // mark it as read. Otherwise, update unread state.
+                        if (e.message && e.message.user_id !== selectedContactId.value) {
+                            const contact = contactsStore.contacts.find(c => c.id === e.message.user_id);
                             if (contact) contact.unread = true;
                         }
-                    });
-            }
         });
 
         return {
             currentUser,
-            contacts,
-            filteredContacts,
+            contactsStore,
             selectedContactId,
             messages,
             newMessage,
