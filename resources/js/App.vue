@@ -274,11 +274,11 @@ export default {
                         // If the message is from the currently selected contact,
                         // mark it as read. Otherwise, update unread state.
                         if (e.message && e.message.user_id !== selectedContactId.value) {
-                        // mark it as read. Otherwise, update unread state.
-                        if (e.message && e.message.user_id !== selectedContactId.value) {
                             const contact = contactsStore.contacts.find(c => c.id === e.message.user_id);
                             if (contact) contact.unread = true;
                         }
+                    });
+            }
         });
 
         return {
@@ -300,7 +300,8 @@ export default {
             markAllNotificationsAsRead
         };
     }
-};
+}
+
 </script>
 
 <style>
