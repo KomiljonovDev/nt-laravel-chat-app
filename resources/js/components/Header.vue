@@ -11,10 +11,9 @@
                 </svg>
             </div>
             <input
-                type="text"
                 class="w-full py-2 pl-10 pr-4 text-sm text-gray-700 bg-gray-100 rounded-full focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
                 placeholder="Search for anything here..."
-                v-model="searchQuery"
+                v-model="contactsStore.searchQuery"
                 @input="handleSearch"
             >
         </div>
@@ -85,6 +84,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useContactsStore } from '@/stores/contactsStore';
 
 export default {
     name: 'Header',
@@ -106,19 +106,18 @@ export default {
             default: null
         }
     },
-    emits: ['toggle-notifications', 'toggle-profile', 'search'],
+    emits: ['toggle-notifications', 'toggle-profile'],
     setup(props, { emit }) {
-        const searchQuery = ref('');
+        const contactsStore = useContactsStore();
         const showDropdown = ref(false);
 
         // Check if there are any unread notifications
         const hasUnreadNotifications = computed(() => {
             return props.notifications && props.notifications.some(notification => !notification.read);
         });
-
         // Methods
         const handleSearch = () => {
-            emit('search', searchQuery.value);
+            contactsStore.fetchContacts(contactsStore.searchQuery);
         };
 
         const toggleDropdown = () => {
@@ -164,7 +163,7 @@ export default {
         };
 
         return {
-            searchQuery,
+            contactsStore,
             showDropdown,
             hasUnreadNotifications,
             handleSearch,
