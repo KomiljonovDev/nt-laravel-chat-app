@@ -9,18 +9,31 @@ class RoomController extends Controller
 {
     public function index()
     {
-        $roomUser = Room::with('users')->get();
+        $currentUserId = auth()->user()->id;
+
+        $roomsWithRelations = Room::with([
+            'lastMessage.user',
+            'users'=>fn ($query) => $query->where('user_id', '!=', $currentUserId)
+        ])->get();
 
         $rooms = [];
-        foreach ($roomUser as $room) {
+        foreach ($roomsWithRelations as $room) {
             foreach ($room->users as $user) {
+                $lastMessageText = 'No messages yet';
+                $lastMessageTime = $room->updated_at->format('H:i');
+
+                if ($room->lastMessage) {
+                    $lastMessageText = $room->lastMessage->text;
+                    $lastMessageTime = $room->lastMessage->created_at->format('H:i');
+                }
+
                 $rooms[] = [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'lastMessage' => 'Last Message RoomController',
-                    'timestamp' => $user->updated_at->format('H:i'),
-                    'avatar' => '/images/default-avatar.png',
-                    'unread' => false,
+                    'lastMessage' => $lastMessageText,
+                    'timestamp' => $lastMessageTime,
+                    'avatar' => $user->avatar ?? '/images/default-avatar.png',
+                    'unread' => false, // You may want to implement logic for unread messages
                     'email' => $user->email,
                     'phone' => $user->phone_number,
                     'location' => $user->location,
@@ -29,6 +42,6 @@ class RoomController extends Controller
             }
         }
 
-        return $rooms;
+        return response()->json($rooms);
     }
 }
