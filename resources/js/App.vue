@@ -78,6 +78,7 @@ import ChatWindow from './components/ChatWindow.vue';
 import MessageInput from './components/MessageInput.vue';
 import NotificationModal from './components/NotificationModal.vue';
 import ProfilePanel from './components/ProfilePanel.vue';
+import { useContactsStore } from '@/stores/contactsStore';
 
 export default {
     components: {
@@ -90,6 +91,7 @@ export default {
     },
     setup() {
         // Current user (would be fetched from API in a real app)
+        const contactsStore = useContactsStore();
         const currentUser = ref({
             id: 2,
             name: 'Dea Novita',
@@ -102,20 +104,7 @@ export default {
         const newMessage = ref('');
 
         // Sample contacts data (would be fetched from API in a real app)
-        const contacts = ref([
-            {
-                id: 1,
-                name: 'Arya Wibawa',
-                lastMessage: 'Yes, sure! I will fill it out now.',
-                timestamp: '10:20',
-                avatar: '/images/default-avatar.png',
-                unread: false,
-                email: 'arya.wibawa@example.com',
-                phone: '+62 812-3456-7890',
-                location: 'Jakarta, Indonesia',
-                lastSeen: 'today'
-            },
-        ]);
+        const contacts = ref(contactsStore.contacts);
 
         // Search query for filtering contacts
         const searchQuery = ref('');
@@ -174,7 +163,17 @@ export default {
             return contacts.value.find(c => c.id === selectedContactId.value) || null;
         };
 
-        const searchGlobal = (query) => {
+        const searchGlobal = async (query) => {
+            try {
+                if (query.length <= 2){
+                    contacts.value = contactsStore.contacts;
+                    return;
+                }
+                const response = await axios.get('search?q=' + query);
+                contacts.value = response.data;
+            } catch (e) {
+                console.error(e.message);
+            }
             searchQuery.value = query;
             // In a real app, you might want to perform a more comprehensive search
         };
@@ -207,9 +206,8 @@ export default {
         const getRooms = async () => {
             try{
                 const response = await axios.get('/rooms');
-                console.info(response.data);
-                console.info(contacts);
                 contacts.value = response.data;
+                contactsStore.getContacts(response.data);
             }catch (err){
                 console.error(err);
             }

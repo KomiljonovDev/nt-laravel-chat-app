@@ -42,6 +42,7 @@
         <div class="flex-1 overflow-y-auto contacts-list">
             <transition-group name="contact-list" tag="div">
                 <ContactItem
+                    v-if="filteredContacts.length"
                     v-for="contact in filteredContacts"
                     :key="contact.id"
                     :contact="contact"
