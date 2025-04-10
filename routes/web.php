@@ -31,6 +31,8 @@ Route::middleware(['auth', UserLastOnlineTime::class])->group(function () {
 
     Route::post('/message', [HomeController::class, 'message'])
         ->name('message');
+    Route::get('/users/{userId}/room', [RoomController::class, 'getRoomByUser'])
+        ->name('rooms.show');
 
 
     Route::get('/search', [SearchController::class, 'index']);

@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Room extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'type',
+    ];
+
     public function users(){
         return $this->belongsToMany(User::class);
     }

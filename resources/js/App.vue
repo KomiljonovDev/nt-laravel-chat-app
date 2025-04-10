@@ -133,7 +133,7 @@ export default {
         // Methods
         const selectContact = (contactId) => {
             selectedContactId.value = contactId;
-
+            getRoomByUser();
             // Mark as read (in real app, send API request)
             const contact = contactsStore.contacts.find(c => c.id === contactId);
             if (contact) contact.unread = false;
@@ -175,6 +175,15 @@ export default {
                 console.error('Error fetching messages:', err.message);
             }
         };
+        const getRoomByUser = async () => {
+            try {
+                const response = await axios.get(`/users/${selectedContactId.value}/room`);
+                messages.value = response.data;
+            } catch (err) {
+                console.error('Error fetching room:', err.message);
+            }
+        }
+        // Fetch contacts (rooms) from the server
         const getRooms = async () => {
             try{
                 const response = await axios.get('/rooms');

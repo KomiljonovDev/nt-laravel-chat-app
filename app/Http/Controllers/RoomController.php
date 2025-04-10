@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Room;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class RoomController extends Controller
@@ -43,5 +44,22 @@ class RoomController extends Controller
         }
 
         return response()->json($rooms);
+    }
+    public function getRoomByUser($selectedUserId){
+        $userId = auth()->user()->id;
+
+        $room = Room::whereHas('users', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })->whereHas('users', function ($q) use ($selectedUserId) {
+            $q->where('user_id', $selectedUserId);
+        })->first();
+
+        if (!$room) {
+            $room = Room::create(['type' => 'private']);
+            $room->users()->attach($userId);
+            $room->users()->attach($selectedUserId);
+        }
+
+        return response()->json(['roomId' => $room->id]);
     }
 }

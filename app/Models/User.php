@@ -53,4 +53,8 @@ class User extends Authenticatable
             ->orderBy('id', 'desc')
                 ->limit(1);
     }
+
+    public function rooms () {
+        return $this->belongsToMany(Room::class);
+    }
 }
