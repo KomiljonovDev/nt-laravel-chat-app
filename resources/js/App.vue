@@ -176,13 +176,37 @@ export default {
             }
         };
         const getRooms = async () => {
-            try{
+            try {
                 const response = await axios.get('/rooms');
-                contactsStore.getContacts(response.data);
-            }catch (err){
-                console.error(err);
+                const rooms = response.data;
+
+                const uniqueUsers = [];
+                const userIds = new Set();
+
+                rooms.forEach(room => {
+                    // Har bir room ichida currentUserdan boshqani topamiz
+                    const otherUser = room.users.find(
+                        u => u.id !== currentUser.value.id
+                    );
+
+                    if (otherUser && !userIds.has(otherUser.id)) {
+                        uniqueUsers.push({
+                            ...otherUser,
+                            lastMessage: room.last_message?.text || '', // optional
+                            timestamp: room.last_message?.time || '',   // optional
+                            unread: false
+                        });
+                        userIds.add(otherUser.id);
+                    }
+                });
+
+                // Unikal kontaktlarni contact storega yuboramiz
+                contactsStore.getContacts(uniqueUsers);
+            } catch (err) {
+                console.error('getRooms xatosi:', err.message);
             }
         };
+
 
         const sendMessage = async () => {
             if (newMessage.value.trim() === '') return;
