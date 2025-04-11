@@ -167,9 +167,10 @@ export default {
         const getMessages = async () => {
             try {
                 // In a real app, you'd include the selected contact ID in the request
-                const response = await axios.get(`/messages/`);
+                const response = await axios.get(`/rooms/${selectedContactId.value}/messages`);
+                console.info(selectedContactId);
                 messages.value = response.data;
-                // Scroll to bottom after messages are loaded
+                // Scroll to bottom after messages   are loaded
                 scrollToBottom();
             } catch (err) {
                 console.error('Error fetching messages:', err.message);
