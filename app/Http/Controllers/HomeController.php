@@ -28,24 +28,58 @@ class HomeController extends Controller
         ]);
     }
 
-    public function messages(): JsonResponse
+    public function messages(Request $request): JsonResponse
     {
-        $messages = Message::with('user')->get()->append('time');
+        $roomId = $request->route('roomId'); // Get the room_id from route parameter
+        
+        $messages = Message::with('user')
+            ->where('room_id', $roomId)
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->append('time');
+        
         return response()->json($messages);
     }
 
     public function message(Request $request): JsonResponse
     {
-        $message = Message::create([
-            'user_id' => auth()->id(),
-            'text' => $request->get('text'),
-            'room_id' => $request->get('room_id'),
-        ]);
-        SendMessage::dispatch($message);
+        try {
+            // Validate the request
+            $validated = $request->validate([
+                'text' => 'required|string',
+                'room_id' => 'required'
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "Message created and job dispatched.",
-        ]);
+            $message = Message::create([
+                'user_id' => auth()->id(),
+                'text' => $validated['text'],
+                'room_id' => $validated['room_id'],
+            ]);
+
+            // Load the user relationship
+            $message->load('user');
+            
+            // Convert to array to ensure proper serialization
+            $messageArray = $message->toArray();
+            
+            // Add time using the accessor if not included
+            if (!isset($messageArray['time'])) {
+                $messageArray['time'] = $message->time;
+            }
+
+            // Dispatch the job with the complete message
+            SendMessage::dispatch($message);
+
+            return response()->json([
+                'success' => true,
+                'message' => $messageArray
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error creating message: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to create message'
+            ], 500);
+        }
     }
 }

@@ -131,31 +131,50 @@ export default {
         const showProfilePanel = ref(false);
 
         // Methods
-        const selectContact = (Contact) => {
-            if (!Contact.room_id){
-                console.info(contactsStore.contacts);
-                console.info(Contact);
-                selectedContactId.value = Contact.id;
-                return;
-            }
+        const selectContact = async (Contact) => {
+            try {
+                // Store the contact temporarily
+                const tempContact = Contact;
 
-            selectedContactId.value = Contact.room_id;
-            // Mark as read (in real app, send API request)
-            const contact = contactsStore.contacts.find(c => c.room_id === Contact.room_id);
-            if (contact) contact.unread = false;
+                if (!tempContact.room_id) {
+                    // Get/create room using contact's id
+                    const roomData = await getRoomByUser(tempContact.id);
+                    if (!roomData || !roomData.roomId) {
+                        console.error('Failed to get/create room for contact');
+                        return;
+                    }
 
-            // Get messages for selected contact
-            getMessages();
-        };
-
-        const getSelectedContact = () => {
-            console.info(selectedContactId);
-            console.log(contactsStore.contacts);
-            return contactsStore.contacts.find(c => {
-                if (c.room_id){
-                    return c.room_id === selectedContactId.value;
+                    // Update the contact in the store with the new room_id
+                    const contact = contactsStore.contacts.find(c => String(c.id) === String(tempContact.id));
+                    if (contact) {
+                        contact.room_id = roomData.roomId;
+                        selectedContactId.value = roomData.roomId;
+                    }
+                } else {
+                    selectedContactId.value = tempContact.room_id;
                 }
-                return c.id === selectedContactId.value;
+
+                // Mark as read (in real app, send API request)
+                const contact = contactsStore.contacts.find(c => String(c.room_id) === String(selectedContactId.value));
+                if (contact) {
+                    contact.unread = false;
+                }
+
+                // Get messages for selected contact
+                await getMessages();
+            } catch (err) {
+                console.error('Error in selectContact:', err.message);
+            }
+        };
+        const getSelectedContact = () => {
+            if (!selectedContactId.value) return null;
+
+            return contactsStore.contacts.find(c => {
+                if (c.room_id) {
+                    return String(c.room_id) === String(selectedContactId.value);
+                }
+                // Only check id if we're in the process of creating a room
+                return String(c.id) === String(selectedContactId.value);
             }) || null;
         };
 
@@ -179,24 +198,57 @@ export default {
         // Integrate with your existing message functions
         const getMessages = async () => {
             try {
-                // In a real app, you'd include the selected contact ID in the request
-                const response = await axios.get(`/messages/`);
+                if (!selectedContactId.value) {
+                    messages.value = [];
+                    return;
+                }
+
+                // Make sure we have a valid room_id
+                const currentContact = getSelectedContact();
+                if (!currentContact) {
+                    console.error('No valid contact selected');
+                    messages.value = [];
+                    return;
+                }
+
+                // Use the room_id for fetching messages
+                const response = await axios.get(`/messages/${selectedContactId.value}`);
+
+                if (!response.data) {
+                    console.error('No messages data received');
+                    messages.value = [];
+                    return;
+                }
+
                 messages.value = response.data;
+
                 // Scroll to bottom after messages are loaded
                 scrollToBottom();
             } catch (err) {
                 console.error('Error fetching messages:', err.message);
+                messages.value = [];
             }
         };
-        const getRoomByUser = async () => {
+        const getRoomByUser = async (user_id) => {
             try {
-                const response = await axios.get(`/users/${selectedContactId.value}/room`);
-                messages.value = response.data;
+                const response = await axios.get(`/users/${user_id}/room`);
+                if (!response.data) {
+                    console.error('No response data received from server');
+                    return null;
+                }
+
+                if (!response.data.roomId) {
+                    console.error('No roomId in response data');
+                    return null;
+                }
+
+                // Just return the response data as is
+                return response.data;
             } catch (err) {
                 console.error('Error fetching room:', err.message);
+                return null;
             }
         }
-        // Fetch contacts (rooms) from the server
         const getRooms = async () => {
             try{
                 const response = await axios.get('/rooms');
@@ -205,44 +257,53 @@ export default {
                 console.error(err);
             }
         };
-
         const sendMessage = async () => {
             if (newMessage.value.trim() === '') return;
+            if (!selectedContactId.value) {
+                console.error('No room selected');
+                return;
+            }
+
+            const messageText = newMessage.value.trim();
+            newMessage.value = ''; // Clear input early for better UX
 
             try {
-                // In a real app, you'd send the message to the server
-                await axios.post('/message', {
-                    text: newMessage.value.trim(),
+                const currentContact = getSelectedContact();
+                if (!currentContact) {
+                    console.error('No valid contact selected');
+                    newMessage.value = messageText; // Restore the message
+                    return;
+                }
+
+                const response = await axios.post('/message', {
+                    text: messageText,
                     room_id: selectedContactId.value,
                 });
 
-                // For demo purposes, we'll add the message locally
-                const message = {
-                    id: Date.now(),
-                    user: { id: currentUser.value.id, name: currentUser.value.name },
-                    text: newMessage.value.trim(),
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                };
+                if (response.data) {
+                    // Fetch latest messages instead of manually adding
+                    await getMessages(); // This will trigger scrollToBottom
 
-                messages.value.push(message);
-
-                // Update the last message in contacts
-                // Update the last message in contacts
-                const contact = contactsStore.contacts.find(c => c.id === selectedContactId.value);
-                if (contact) {
-                    contact.lastMessage = newMessage.value.trim();
-                    contact.timestamp = message.time;
+                    // Update the last message in contacts
+                    const contact = contactsStore.contacts.find(c =>
+                        String(c.room_id) === String(selectedContactId.value)
+                    );
+                    if (contact) {
+                        contact.lastMessage = messageText;
+                        contact.timestamp = new Date().toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                } else {
+                    console.error('Failed to send message');
+                    newMessage.value = messageText; // Restore the message
                 }
-                // Clear input
-                newMessage.value = '';
-
-                // Scroll to bottom
-                scrollToBottom();
             } catch (err) {
                 console.error('Error sending message:', err.message);
+                newMessage.value = messageText; // Restore the message if sending failed
             }
         };
-
         const makeSound = () => {
             const audio = new Audio('/sounds/tik.wav');
             audio.play().catch((e) => {
@@ -252,9 +313,11 @@ export default {
 
         const scrollToBottom = () => {
             nextTick(() => {
-                const messageList = document.getElementById('messagelist');
-                if (messageList) {
-                    messageList.scrollTop = messageList.scrollHeight;
+                const messageContainer = document.querySelector('.messages-container');
+                if (messageContainer) {
+                    setTimeout(() => {
+                        messageContainer.scrollTop = messageContainer.scrollHeight;
+                    }, 50); // Use same timeout as ChatWindow
                 }
             });
         };
@@ -280,32 +343,87 @@ export default {
 
         // Lifecycle hooks
         onMounted(() => {
-            // Initialize messages for the default selected contact
+            // Initialize user data
             getMe();
             getRooms();
-            getMessages();
 
             // Set up Echo for real-time updates
             if (window.Echo) {
                 window.Echo.private("channel_for_everyone")
                     .listen('GotMessage', (e) => {
-                        console.log('Received message:', e);
-                        // Reload messages to include the new one
-                        getMessages();
-                        makeSound();
+                        // Log raw event and debug the structure
+                        console.log('Raw event:', e);
+                        console.log('Event message structure:', {
+                            direct: e.message,
+                            nested: e.message?.message,
+                            data: e.data
+                        });
 
-                        // If the message is from the currently selected contact,
-                        // mark it as read. Otherwise, update unread state.
-                        if (e.message && e.message.user_id !== selectedContactId.value) {
-                            const contact = contactsStore.contacts.find(c => c.id === e.message.user_id);
-                            if (contact) contact.unread = true;
+                        // In Laravel's broadcast format, the message should be in either e.message or e.data
+                        let messageData = e;
+
+                        // Try to get message from possible locations
+                        if (e.message?.room_id) {
+                            console.log('Found message data directly in e.message');
+                            messageData = e.message;
+                        } else if (e.message?.message?.room_id) {
+                            console.log('Found message data in nested e.message.message');
+                            messageData = e.message.message;
+                        } else if (e.data?.room_id) {
+                            console.log('Found message data in e.data');
+                            messageData = e.data;
+                        } else if (e.data?.message?.room_id) {
+                            console.log('Found message data in e.data.message');
+                            messageData = e.data.message;
+                        }
+
+                        // If we still don't have message data, log and return
+                        if (!messageData || !messageData.room_id) {
+                            console.error('Could not find valid message data with room_id. Event structure:', {
+                                rawEvent: e,
+                                message: e.message,
+                                nestedMessage: e.message?.message,
+                                data: e.data
+                            });
+                            return;
+                        }
+
+                        // Log the message data we're going to use
+                        console.log('Using message data:', messageData);
+
+                        // Handle the message
+                        if (String(messageData.room_id) === String(selectedContactId.value)) {
+                            console.log('Message is for current room, reloading messages');
+                            getMessages();
+                            makeSound();
+                        } else {
+                            const contact = contactsStore.contacts.find(c =>
+                                String(c.room_id) === String(messageData.room_id)
+                            );
+                            if (contact) {
+                                console.log('Updating contact with new message:', {
+                                    contactId: contact.id,
+                                    roomId: messageData.room_id,
+                                    text: messageData.text
+                                });
+                                contact.unread = true;
+                                contact.lastMessage = messageData.text;
+                                contact.timestamp = messageData.time ||
+                                    new Date().toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                makeSound();
+                            } else {
+                                console.warn('Could not find contact for room_id:', messageData.room_id);
+                            }
                         }
                     });
             }
         });
 
         return {
-            currentUser,
+            currentUser, // Add currentUser to the return object
             contactsStore,
             selectedContactId,
             messages,
@@ -322,9 +440,8 @@ export default {
             markNotificationAsRead,
             markAllNotificationsAsRead
         };
-    }
-}
-
+    } // End of setup
+} // End of component export
 </script>
 
 <style>

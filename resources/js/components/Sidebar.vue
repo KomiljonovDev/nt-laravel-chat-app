@@ -46,7 +46,7 @@
                     v-for="contact in filteredContacts"
                     :key="contact.id"
                     :contact="contact"
-                    :isSelected="selectedContactId === contact.id || selectedContactId === contact.room_id"
+                    :isSelected="String(selectedContactId) === String(contact.room_id) || String(selectedContactId) === String(contact.id)"
                     @select="$emit('select-contact', {
                         id: contact.id,
                         room_id: contact.room_id
@@ -89,7 +89,7 @@ export default {
             default: () => []
         },
         selectedContactId: {
-            type: Number,
+            type: [Number, String], // Allow both number and string types
             default: null
         }
     },
@@ -150,11 +150,16 @@ export default {
         };
 
         // Update selectedContactId if the current one is filtered out
+        // Update selectedContactId if the current one is filtered out
         watch(sortedContacts, (newValue) => {
-            if (props.selectedContactId && !newValue.some(contact => contact.id === props.selectedContactId)) {
-                // If current selected contact is not in filtered list and there are other contacts,
-                // select the first one in the filtered list
-                if (newValue.length > 0) {
+            if (props.selectedContactId) {
+                const selectedId = String(props.selectedContactId);
+                const contactExists = newValue.some(contact => 
+                    String(contact.id) === selectedId || 
+                    String(contact.room_id) === selectedId
+                );
+                
+                if (!contactExists && newValue.length > 0) {
                     emit('select-contact', {
                         id: newValue[0].id,
                         room_id: newValue[0].room_id
@@ -162,6 +167,13 @@ export default {
                 }
             }
         });
+        // Add a new method to handle contact selection
+        const handleContactSelect = (contact) => {
+            emit('select-contact', {
+                id: contact.id,
+                room_id: contact.room_id
+            });
+        };
 
         return {
             searchQuery,
@@ -169,7 +181,8 @@ export default {
             activeTab,
             filteredContacts: sortedContacts,
             filterContacts,
-            clearSearch
+            clearSearch,
+            handleContactSelect
         };
     }
 };

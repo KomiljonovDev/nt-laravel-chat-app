@@ -12,10 +12,26 @@ use Illuminate\Queue\SerializesModels;
 class GotMessage implements ShouldBroadcast {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct() {
+    public $message;
+
+    public function __construct($message)
+    {
+        \Log::info('GotMessage constructor received:', ['message' => $message]);
+
+        // Store the message data directly without restructuring
+        $this->message = $message;
     }
 
-    public function broadcastOn() {
-        return  new PrivateChannel("channel_for_everyone");
+    public function broadcastOn()
+    {
+        return new PrivateChannel("channel_for_everyone");
+    }
+
+    public function broadcastWith()
+    {
+        // Send the message data directly without additional wrapping
+        \Log::info('GotMessage broadcasting:', ['message' => $this->message]);
+        
+        return $this->message;
     }
 }

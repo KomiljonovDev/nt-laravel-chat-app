@@ -12,6 +12,15 @@ class Message extends Model
 
     public $table = 'messages';
     protected $guarded = [];
+    
+    // Add necessary attributes for API/broadcast responses
+    protected $appends = ['time'];
+    
+    // Define which attributes should be included in arrays/JSON
+    protected $visible = ['id', 'user_id', 'room_id', 'text', 'time', 'created_at', 'user'];
+    
+    // Define relationships to be automatically loaded
+    protected $with = ['user'];
 
     public function user(): BelongsTo
     {
@@ -21,7 +30,7 @@ class Message extends Model
     public function getTimeAttribute(): string
     {
         return date(
-            "d M Y, H:i:s",
+            "H:i",  // Changed format to match frontend expectations
             strtotime($this->attributes['created_at'])
         );
     }
